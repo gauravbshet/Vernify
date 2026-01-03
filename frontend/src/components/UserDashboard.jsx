@@ -89,13 +89,76 @@ export default function UserDashboard() {
     addFiles(e.dataTransfer.files);
   };
 
-  const handleSubmit = () => {
+  const [uploading, setUploading] = React.useState(false);
+  const [verifications, setVerifications] = React.useState([]); // { id, uploadId, status, scaled_score, report }
+
+  // Tries to get a Supabase access token from common localStorage locations.
+  const getAuthToken = () => {
+    try {
+      const raw = localStorage.getItem('supabase.auth.token') || localStorage.getItem('sb:token');
+      if (!raw) return null;
+      // token may be JSON with access_token
+      const parsed = JSON.parse(raw);
+      return parsed?.access_token || parsed?.currentSession?.access_token || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!files.length) {
       alert('Please select files to upload');
       return;
     }
-    alert(`Successfully uploaded ${files.length} file(s)`);
-    setFiles([]);
+
+    const token = getAuthToken();
+    if (!token) {
+      alert('You must be signed in (Supabase session) to upload files.');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      for (const file of files) {
+        // upload
+        const uploadResp = await import('../api').then((m) => m.uploadFile(file, token));
+        const upload = uploadResp?.upload || uploadResp;
+        // schedule verification
+        const verifyResp = await import('../api').then((m) => m.verifyUpload(upload.id, token));
+        const verificationId = verifyResp?.verification_id || verifyResp?.verificationId;
+
+        const v = { id: verificationId, uploadId: upload.id, status: 'queued', scaled_score: null, report: null };
+        setVerifications((prev) => [v, ...prev]);
+
+        // start polling
+        pollResult(verificationId, token);
+      }
+
+      setFiles([]);
+    } catch (err) {
+      console.error(err);
+      alert('Upload or verification failed: ' + (err.message || err));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const pollResult = (verificationId, token) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await import('../api').then((m) => m.getResult(verificationId, token));
+        if (!res) return;
+        const status = res.status || res?.status;
+        setVerifications((prev) => prev.map((p) => (p.id === verificationId ? { ...p, status, scaled_score: res.scaled_score, report: res.report } : p)));
+        if (status === 'done' || status === 'error') {
+          clearInterval(interval);
+        }
+      } catch (e) {
+        console.error('poll error', e);
+        // keep polling; in case of persistent errors consider backoff
+      }
+    }, 2000);
   };
 
   const removeFile = (index) => {
@@ -151,7 +214,7 @@ export default function UserDashboard() {
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
           onClick={() => setSidebarOpen(false)}
         />
@@ -205,7 +268,7 @@ export default function UserDashboard() {
           <div className="px-6 lg:px-8 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <button 
+                <button
                   onClick={() => setSidebarOpen(true)}
                   className="lg:hidden text-white/90 hover:text-white"
                 >
@@ -216,7 +279,7 @@ export default function UserDashboard() {
                   <p className="text-sm text-emerald-100 mt-0.5">Have a productive day!</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-all backdrop-blur-sm border border-white/20">
                   <Search size={16} strokeWidth={2} />
@@ -236,7 +299,7 @@ export default function UserDashboard() {
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, i) => (
-              <div 
+              <div
                 key={i}
                 className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200 border-l-4 ${getAccentColorClasses(stat.accentColor)}`}
               >
@@ -245,11 +308,10 @@ export default function UserDashboard() {
                     <stat.icon size={20} className="text-gray-600" strokeWidth={2} />
                   </div>
                   {stat.positive !== undefined && (
-                    <div className={`flex items-center gap-1 ${
-                      stat.positive 
-                        ? 'text-emerald-600' 
+                    <div className={`flex items-center gap-1 ${stat.positive
+                        ? 'text-emerald-600'
                         : 'text-amber-600'
-                    }`}>
+                      }`}>
                       {stat.positive ? (
                         <TrendingUp size={14} strokeWidth={2.5} />
                       ) : (
@@ -286,8 +348,8 @@ export default function UserDashboard() {
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
                   className={`relative border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-200
-                    ${dragActive 
-                      ? 'border-emerald-400 bg-emerald-50' 
+                    ${dragActive
+                      ? 'border-emerald-400 bg-emerald-50'
                       : 'border-gray-300 hover:border-emerald-400 bg-gray-50'}`}
                 >
                   <input
@@ -359,15 +421,34 @@ export default function UserDashboard() {
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={handleSubmit}
-                    disabled={files.length === 0}
+                    disabled={files.length === 0 || uploading}
                     className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200
-                      ${files.length > 0
+                      ${files.length > 0 && !uploading
                         ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 shadow-sm hover:shadow-md'
                         : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                   >
                     <UploadCloud size={18} strokeWidth={2} />
-                    Upload Files
+                    {uploading ? 'Uploading…' : 'Upload Files'}
                   </button>
+                </div>
+
+                {/* Verifications List */}
+                <div className="mt-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Verifications</h3>
+                  <div className="space-y-2">
+                    {verifications.map((v, i) => (
+                      <div key={v.id || i} className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900 truncate font-medium">{v.uploadId}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Status: {v.status}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">{v.scaled_score ?? '—'}</p>
+                          <p className="text-xs text-gray-500">Score (0–100)</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -383,11 +464,10 @@ export default function UserDashboard() {
                   {recentActivity.map((activity, i) => (
                     <div key={i} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                       <div className="flex items-start gap-3">
-                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                          activity.type === 'success' ? 'bg-emerald-500' :
-                          activity.type === 'pending' ? 'bg-amber-500' :
-                          'bg-teal-500'
-                        }`}></div>
+                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${activity.type === 'success' ? 'bg-emerald-500' :
+                            activity.type === 'pending' ? 'bg-amber-500' :
+                              'bg-teal-500'
+                          }`}></div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-gray-900 font-medium">{activity.action}</p>
                           <p className="text-xs text-gray-500 mt-0.5">{activity.user}</p>
@@ -417,12 +497,11 @@ export default function UserDashboard() {
                       <span className="text-sm font-semibold text-gray-900">{item.progress}%</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          item.color === 'emerald' ? 'bg-emerald-500' :
-                          item.color === 'teal' ? 'bg-teal-500' :
-                          'bg-cyan-500'
-                        }`}
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${item.color === 'emerald' ? 'bg-emerald-500' :
+                            item.color === 'teal' ? 'bg-teal-500' :
+                              'bg-cyan-500'
+                          }`}
                         style={{ width: `${item.progress}%` }}
                       ></div>
                     </div>
