@@ -1,5 +1,6 @@
 
 from routers.verify_router import router as verify_router
+from routers import blockchain_router
 from routers.uploads_router import router as uploads_router
 from routers import auth_router  # Import the authentication router
 from services import auth as auth_service
@@ -45,7 +46,7 @@ app.include_router(auth_router.router, prefix="/auth", tags=["Authentication"])
 
 app.include_router(uploads_router)
 app.include_router(verify_router)
-
+app.include_router(blockchain_router.router)
 # Startup check
 
 

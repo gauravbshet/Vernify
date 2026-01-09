@@ -2,11 +2,24 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from services import supabase_service, ml_runner
 from services.auth import get_current_user
 from models.files import VerificationCreateResponse
+from services.blockchain.blockchain_manager import (
+    BlockchainManager,
+    BlockchainType,
+    BlockchainAccessRole
+)
 import tempfile
 import os
+import hashlib
+import json
+import logging
 
 router = APIRouter(prefix="/api", tags=["verify"])
 
+logger = logging.getLogger(__name__)
+
+blockchain_manager = BlockchainManager(
+    access_role=BlockchainAccessRole.VERIFIER
+)
 
 async def _background_verify(verification_id: str, upload: dict):
     # download file from supabase storage to a temp file and run ML
@@ -17,22 +30,58 @@ async def _background_verify(verification_id: str, upload: dict):
         tmpdir, f"{verification_id}_{os.path.basename(storage_path)}")
 
     try:
+        # 1. Download file
         await supabase_service.download_file_to_temp(bucket, storage_path, tmpfile)
+
+        # 2. Compute file hash BEFORE deletion
+        with open(tmpfile, "rb") as f:
+            file_hash = hashlib.sha256(f.read()).hexdigest()
+
+        # 3. Run ML
+        result = ml_runner.run_verification_file(tmpfile)
+
+        # 4. Compute ML report hash
+        ml_report = result.get("report", {})
+        ml_report_str = json.dumps(ml_report, sort_keys=True)
+        ml_report_hash = hashlib.sha256(ml_report_str.encode()).hexdigest()
+
     except Exception as e:
+        if os.path.exists(tmpfile):
+            try:
+                os.remove(tmpfile)
+            except:
+                pass
+
         await supabase_service.update_verification(verification_id, {
             "status": "error",
             "details": {"error": str(e)}
         })
         return
 
+    finally:
+        # 5. Always clean up temp file
+        if os.path.exists(tmpfile):
+            try:
+                os.remove(tmpfile)
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to cleanup temp file: {cleanup_error}")
+
+
+
+    # ---- Store on blockchain (NON-BLOCKING) ----
+    blockchain_result = None
     try:
-        result = ml_runner.run_verification_file(tmpfile)
+        blockchain_result = blockchain_manager.store_verification_result(
+            verification_id=verification_id,
+            file_hash=file_hash,
+            ml_report_hash=ml_report_hash,
+            bias_score=result.get("score", 0.0),
+            blockchain_type=BlockchainType.BOTH
+        )
     except Exception as e:
-        await supabase_service.update_verification(verification_id, {
-            "status": "error",
-            "details": {"error": str(e)}
-        })
-        return
+        logger.error(f"Blockchain storage failed (non-blocking): {e}")
+        blockchain_result = {"errors": [str(e)]}
+
 
     # compute scaled 0-100 score (higher is better fairness)
     raw_score = result.get("score", 0.0)
@@ -44,7 +93,10 @@ async def _background_verify(verification_id: str, upload: dict):
         "score": raw_score,
         "scaled_score": scaled,
         "report": result.get("report"),
-        "details": result.get("details")
+        "details": result.get("details"),
+        "file_hash": file_hash,
+        "ml_report_hash": ml_report_hash,
+        "blockchain": blockchain_result
     })
 
 
