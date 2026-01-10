@@ -10,20 +10,31 @@ This backend provides endpoints to upload CSV/XLSX files, run schema-agnostic ML
 
 ## DB migrations
 
-Run the SQL in `backend/db/migrations/001_create_tables.sql` against your Supabase Postgres database (via `supabase` CLI or psql).
+Run the SQL migrations in `backend/db/migrations/` against your Supabase Postgres database (via `supabase` CLI or `psql`). A new migration (`002_profiles_datasets_files.sql`) creates `profiles`, `datasets`, `files`, a `user_role` enum, an auth trigger that auto-creates a `profiles` row when `auth.users` is created, and Row Level Security (RLS) policies that implement Admin/Validator/User access control.
 
 Example (supabase CLI):
 
 ```bash
-# login, set project, then run SQL
+# login, set project, then run SQL (order matters: run 001 then 002)
 supabase sql "$(cat backend/db/migrations/001_create_tables.sql)"
+supabase sql "$(cat backend/db/migrations/002_profiles_datasets_files.sql)"
 ```
 
 If you prefer psql:
 
 ```bash
 psql "postgres://<user>:<password>@<host>:<port>/<db>" -f backend/db/migrations/001_create_tables.sql
+psql "postgres://<user>:<password>@<host>:<port>/<db>" -f backend/db/migrations/002_profiles_datasets_files.sql
 ```
+
+To create an initial admin user (example), first sign up the user via Supabase Auth (or insert a user in `auth.users`), then run:
+
+```sql
+-- replace <uuid> and <email> with your admin's values
+insert into public.profiles (id, email, role) values ('<uuid>', '<email>', 'admin');
+```
+
+This will allow that user to manage roles and view all datasets/files via the Admin RLS policy.
 
 
 ## API endpoints (summary)

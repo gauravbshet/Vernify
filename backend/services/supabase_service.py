@@ -9,7 +9,7 @@ load_dotenv()
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-DEFAULT_BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "uploads")
+DEFAULT_BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "datasets")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError(
@@ -111,3 +111,25 @@ async def download_file_to_temp(bucket: str, storage_path: str, dest_path: str) 
         raise RuntimeError(f"Supabase storage download failed: {res['error']}")
     with open(dest_path, "wb") as f:
         f.write(res)
+
+
+async def get_profile_by_id(user_id: str) -> Optional[Dict[str, Any]]:
+    """Return profile row for given user id (or None)."""
+    res = supabase.table("profiles").select(
+        "*").eq("id", user_id).maybe_single().execute()
+    if res.error:
+        raise RuntimeError(f"Query profiles failed: {res.error}")
+    return res.data
+
+
+async def get_user_role(user_id: str) -> Optional[str]:
+    """Return role string for a user id, or None if not found."""
+    profile = await get_profile_by_id(user_id)
+    if not profile:
+        return None
+    return profile.get("role")
+
+
+async def is_user_admin(user_id: str) -> bool:
+    role = await get_user_role(user_id)
+    return role == 'admin'

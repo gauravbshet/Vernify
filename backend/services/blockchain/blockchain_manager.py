@@ -59,7 +59,8 @@ class BlockchainManager:
         self.hyperledger = None
         self.multichain = None
 
-        blockchain_enabled = os.environ.get("BLOCKCHAIN_ENABLED", "false").lower() == "true"
+        blockchain_enabled = os.environ.get(
+            "BLOCKCHAIN_ENABLED", "false").lower() == "true"
         if not blockchain_enabled:
             logger.info("Blockchain disabled via environment flag")
             return
@@ -98,7 +99,8 @@ class BlockchainManager:
         except Exception:
             pass
 
-        logger.info("Blockchain manager initialized in auditor (read-only) mode")
+        logger.info(
+            "Blockchain manager initialized in auditor (read-only) mode")
 
     # -------------------- Write API --------------------
 
@@ -137,7 +139,8 @@ class BlockchainManager:
                     ml_report_hash,
                     bias_score
                 )
-                res["execution_time_ms"] = round((time.time() - start) * 1000, 2)
+                res["execution_time_ms"] = round(
+                    (time.time() - start) * 1000, 2)
                 results["blockchain_results"]["hyperledger_fabric"] = res
             except (BlockchainNetworkError, BlockchainValidationError, BlockchainChainError) as e:
                 logger.error(f"Hyperledger Fabric error (non-blocking): {e}")
@@ -157,7 +160,8 @@ class BlockchainManager:
                     ml_report_hash,
                     bias_score
                 )
-                res["execution_time_ms"] = round((time.time() - start) * 1000, 2)
+                res["execution_time_ms"] = round(
+                    (time.time() - start) * 1000, 2)
                 results["blockchain_results"]["multichain"] = res
             except (MCNetworkError, MCValidationError, MCChainError) as e:
                 logger.error(f"MultiChain error (non-blocking): {e}")
@@ -182,13 +186,15 @@ class BlockchainManager:
         if self.hyperledger:
             try:
                 start = time.time()
-                data = self.hyperledger.get_verification_result(verification_id)
+                data = self.hyperledger.get_verification_result(
+                    verification_id)
                 comparison["comparison"]["hyperledger_fabric"] = {
                     "query_time_ms": round((time.time() - start) * 1000, 2),
                     "data_available": data is not None
                 }
             except Exception as e:
-                comparison["comparison"]["hyperledger_fabric"] = {"error": str(e)}
+                comparison["comparison"]["hyperledger_fabric"] = {
+                    "error": str(e)}
 
         if self.multichain:
             try:
@@ -202,7 +208,8 @@ class BlockchainManager:
                 comparison["comparison"]["multichain"] = {"error": str(e)}
 
         return comparison
-       def verify_integrity(
+
+    def verify_integrity(
         self,
         verification_id: str,
         file_hash: str,
@@ -254,5 +261,3 @@ class BlockchainManager:
         )
 
         return integrity_results
- 
-    
