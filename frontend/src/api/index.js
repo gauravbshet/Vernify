@@ -7,6 +7,21 @@ function _authHeader(token) {
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+async function _safeJsonParse(response) {
+    const text = await response.text();
+    
+    if (!text || text.trim() === '') {
+        return {};
+    }
+    
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        const contentType = response.headers.get('content-type');
+        throw new Error(`Invalid JSON response: ${e.message}. Content-Type: ${contentType || 'none'}. Response: ${text.substring(0, 100)}`);
+    }
+}
+
 export async function uploadFile(file, token) {
     const form = new FormData();
     form.append('file', file);
@@ -20,7 +35,7 @@ export async function uploadFile(file, token) {
         const text = await res.text();
         throw new Error(`Upload failed: ${res.status} ${text}`);
     }
-    return res.json();
+    return _safeJsonParse(res);
 }
 
 export async function verifyUpload(uploadId, token) {
@@ -35,7 +50,7 @@ export async function verifyUpload(uploadId, token) {
         const text = await res.text();
         throw new Error(`Verify request failed: ${res.status} ${text}`);
     }
-    return res.json();
+    return _safeJsonParse(res);
 }
 
 export async function getResult(verificationId, token) {
@@ -47,7 +62,7 @@ export async function getResult(verificationId, token) {
         const text = await res.text();
         throw new Error(`Get result failed: ${res.status} ${text}`);
     }
-    return res.json();
+    return _safeJsonParse(res);
 }
 
 export async function getHistory(token) {
@@ -59,7 +74,7 @@ export async function getHistory(token) {
         const text = await res.text();
         throw new Error(`Get history failed: ${res.status} ${text}`);
     }
-    return res.json();
+    return _safeJsonParse(res);
 }
 
 export async function healthMl(token) {
@@ -67,5 +82,9 @@ export async function healthMl(token) {
         method: 'GET',
         headers: _authHeader(token),
     });
-    return res.json();
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Health check failed: ${res.status} ${text}`);
+    }
+    return _safeJsonParse(res);
 }

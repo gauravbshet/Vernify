@@ -171,7 +171,7 @@ export default function ValidatorDashboard() {
         </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-red-50">
+          <button onClick={async () => { const { signOut } = await import('../api/auth'); await signOut(); window.location.href = '/validator' }} className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-red-50">
             <LogOut size={18} strokeWidth={2} />
             Logout
           </button>
@@ -180,7 +180,7 @@ export default function ValidatorDashboard() {
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
           onClick={() => setSidebarOpen(false)}
         />
@@ -220,7 +220,7 @@ export default function ValidatorDashboard() {
         </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-red-50">
+          <button onClick={async () => { const { signOut } = await import('../api/auth'); await signOut(); window.location.href = '/validator' }} className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-red-50">
             <LogOut size={18} strokeWidth={2} />
             Logout
           </button>
@@ -234,7 +234,7 @@ export default function ValidatorDashboard() {
           <div className="px-6 lg:px-8 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <button 
+                <button
                   onClick={() => setSidebarOpen(true)}
                   className="lg:hidden text-white/90 hover:text-white"
                 >
@@ -245,7 +245,7 @@ export default function ValidatorDashboard() {
                   <p className="text-sm text-stone-200 mt-0.5">Review and validate pending requests</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-all backdrop-blur-sm border border-white/20">
                   <Search size={16} strokeWidth={2} />
@@ -265,7 +265,7 @@ export default function ValidatorDashboard() {
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, i) => (
-              <div 
+              <div
                 key={i}
                 className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200 border-l-4 ${getAccentColorClasses(stat.accentColor)}`}
               >
@@ -304,7 +304,7 @@ export default function ValidatorDashboard() {
 
                 <div className="space-y-3">
                   {pendingRequests.map((request) => (
-                    <div 
+                    <div
                       key={request.id}
                       className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-all group"
                     >
@@ -328,9 +328,9 @@ export default function ValidatorDashboard() {
                           <MoreVertical size={16} strokeWidth={2} />
                         </button>
                       </div>
-                      
+
                       <p className="text-xs text-gray-600 mb-3 pl-0">{request.description}</p>
-                      
+
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleApprove(request.id)}
@@ -374,11 +374,10 @@ export default function ValidatorDashboard() {
                   {recentActivity.map((activity, i) => (
                     <div key={i} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                       <div className="flex items-start gap-3">
-                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                          activity.type === 'approved' ? 'bg-stone-500' :
+                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${activity.type === 'approved' ? 'bg-stone-500' :
                           activity.type === 'rejected' ? 'bg-red-500' :
-                          'bg-amber-500'
-                        }`}></div>
+                            'bg-amber-500'
+                          }`}></div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-gray-900 font-medium">{activity.action}</p>
                           <p className="text-xs text-gray-600 mt-0.5">{activity.user}</p>
@@ -405,7 +404,7 @@ export default function ValidatorDashboard() {
                         <span className="text-sm font-semibold text-gray-900">{metric.value}</span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-stone-500 rounded-full transition-all duration-500"
                           style={{ width: `${metric.progress}%` }}
                         ></div>

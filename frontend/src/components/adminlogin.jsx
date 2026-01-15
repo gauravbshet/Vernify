@@ -10,28 +10,54 @@ export default function LoginPage() {
 
   useEffect(() => {
     setTimeout(() => setIsVisible(true), 100);
-  }, []);
+    (async () => {
+      try {
+        const { getToken, getDashboard } = await import('../api/auth')
+        const token = getToken()
+        if (!token) return
+        // verify role with server before redirecting
+        try {
+          await getDashboard('admin')
+          navigate('/admin/dashboard')
+        } catch (err) {
+          // token invalid or not admin; stay on login page
+        }
+      } catch (e) { }
+    })()
+  }, [])
 
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e?.preventDefault?.()
-    console.log('Login attempt:', { email, password });
-    // simple validation (optional)
-    if (email && password) {
-      navigate('/admin/dashboard')
-    } else {
-      // basic feedback - in a real app show proper validation messages
+    if (!email || !password) {
       alert('Please enter email and password')
+      return
+    }
+    try {
+      const json = await import('../api/auth').then(mod => mod.signIn({ email, password, role: 'admin' }))
+      if (!json.success) {
+        alert(json.message || 'Sign in failed')
+        return
+      }
+      // optionally verify returned role
+      const returnedRole = json.data?.role
+      if (returnedRole && returnedRole !== 'admin') {
+        alert('Forbidden: admin role required')
+        return
+      }
+      navigate('/admin/dashboard')
+    } catch (err) {
+      console.error('Sign in error', err)
+      alert(err.message || 'Sign in failed')
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-blue-50 to-gray-100 flex items-center justify-center p-4">
       <div
-        className={`w-full max-w-md transition-all duration-700 ease-out ${
-          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-        }`}
+        className={`w-full max-w-md transition-all duration-700 ease-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
+          }`}
       >
         <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-8">
           {/* Header */}
@@ -130,6 +156,11 @@ export default function LoginPage() {
             <button className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
               Sign up
             </button>
+          </div>
+
+          <div className="mt-4 text-center text-sm">
+            <button onClick={() => navigate('/user/login')} className="text-sm text-gray-500 underline mr-4">User login</button>
+            <button onClick={() => navigate('/validator')} className="text-sm text-gray-500 underline">Validator login</button>
           </div>
         </div>
 

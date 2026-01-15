@@ -1,14 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { 
-  UploadCloud, 
-  LogOut, 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
-  FileText, 
-  Menu, 
-  X, 
-  Bell, 
+import {
+  UploadCloud,
+  LogOut,
+  LayoutDashboard,
+  Users,
+  Settings,
+  FileText,
+  Menu,
+  X,
+  Bell,
   Search,
   TrendingUp,
   TrendingDown,
@@ -113,7 +113,7 @@ export default function AdminDashboard() {
         </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-red-50">
+          <button onClick={async () => { const { signOut } = await import('../api/auth'); await signOut(); window.location.href = '/admin/login' }} className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-red-50">
             <LogOut size={18} strokeWidth={2} />
             Logout
           </button>
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
           onClick={() => setSidebarOpen(false)}
         />
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
         </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-red-50">
+          <button onClick={async () => { const { signOut } = await import('../api/auth'); await signOut(); window.location.href = '/admin/login' }} className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-red-50">
             <LogOut size={18} strokeWidth={2} />
             Logout
           </button>
@@ -176,7 +176,7 @@ export default function AdminDashboard() {
           <div className="px-6 lg:px-8 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <button 
+                <button
                   onClick={() => setSidebarOpen(true)}
                   className="lg:hidden text-white/90 hover:text-white"
                 >
@@ -187,7 +187,7 @@ export default function AdminDashboard() {
                   <p className="text-sm text-blue-100 mt-0.5">Welcome back, Admin</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-all backdrop-blur-sm border border-white/20">
                   <Search size={16} strokeWidth={2} />
@@ -207,7 +207,7 @@ export default function AdminDashboard() {
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, i) => (
-              <div 
+              <div
                 key={i}
                 className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200 border-l-4 ${getAccentColorClasses(stat.accentColor)}`}
               >
@@ -215,11 +215,10 @@ export default function AdminDashboard() {
                   <div className="p-2 bg-gray-50 rounded-lg">
                     <stat.icon size={20} className="text-gray-600" strokeWidth={2} />
                   </div>
-                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                    stat.positive 
-                      ? 'bg-emerald-50 text-emerald-700' 
+                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${stat.positive
+                      ? 'bg-emerald-50 text-emerald-700'
                       : 'bg-red-50 text-red-700'
-                  }`}>
+                    }`}>
                     {stat.positive ? (
                       <TrendingUp size={12} strokeWidth={2.5} />
                     ) : (
@@ -278,12 +277,11 @@ export default function AdminDashboard() {
                       <span className="text-sm font-semibold text-gray-900">{metric.value}</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          metric.color === 'blue' ? 'bg-blue-500' :
-                          metric.color === 'indigo' ? 'bg-indigo-500' :
-                          'bg-emerald-500'
-                        }`}
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${metric.color === 'blue' ? 'bg-blue-500' :
+                            metric.color === 'indigo' ? 'bg-indigo-500' :
+                              'bg-emerald-500'
+                          }`}
                         style={{ width: `${metric.progress}%` }}
                       ></div>
                     </div>

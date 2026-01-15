@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom'
 
 export default function UserLogin() {
@@ -7,20 +7,34 @@ export default function UserLogin() {
 
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    (async () => {
+      try {
+        const { getToken, getDashboard } = await import('../api/auth')
+        const token = getToken()
+        if (!token) return
+        try { await getDashboard('user'); navigate('/user/dashboard') } catch (e) { }
+      } catch (e) { }
+    })()
+  }, [])
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log({ email, password });
-    if (email && password) {
+    if (!email || !password) return alert('Please enter email and password')
+    try {
+      const json = await import('../api/auth').then(mod => mod.signIn({ email, password, role: 'user' }))
+      if (!json.success) return alert(json.message || 'Sign in failed')
       navigate('/user/dashboard')
-    } else {
-      alert('Please enter email and password')
+    } catch (err) {
+      console.error(err)
+      alert(err.message || 'Sign in failed')
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-        
+
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">
           Welcome Back
         </h2>
@@ -82,6 +96,11 @@ export default function UserLogin() {
             Sign up
           </a>
         </p>
+
+        <div className="mt-4 text-center text-sm">
+          <button onClick={() => navigate('/admin/login')} className="text-sm text-gray-500 underline mr-4">Admin login</button>
+          <button onClick={() => navigate('/validator')} className="text-sm text-gray-500 underline">Validator login</button>
+        </div>
       </div>
     </div>
   );

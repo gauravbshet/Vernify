@@ -5,7 +5,8 @@ This backend provides endpoints to upload CSV/XLSX files, run schema-agnostic ML
 ## Environment variables
 
 - SUPABASE_URL
-- SUPABASE_KEY
+- SUPABASE_KEY (anon/public key for auth)
+- SUPABASE_SERVICE_ROLE_KEY (service role key for bypassing RLS - required for role checking)
 - SUPABASE_STORAGE_BUCKET (optional, default `uploads`)
 
 ## DB migrations

@@ -10,6 +10,7 @@ import ValidatorDashboard from './components/ValidatorDashboard.jsx'
 import AdminDashboard from './components/AdminDashboard.jsx'
 import UserDashboard from './components/UserDashboard.jsx'
 import NotFound from './components/NotFound.jsx'
+import ProtectedRoute from './components/ProtectedRoute.jsx'
 
 
 console.log('main loaded — Dashboard is root')
@@ -19,17 +20,17 @@ try {
     <StrictMode>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Navigate to="/admin/login" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
           <Route path="/user" element={<Navigate to="/user/login" replace />} />
           <Route path="/user/login" element={<UserLogin />} />
-          <Route path="/user/dashboard" element={<UserDashboard />} />
+          <Route path="/user/dashboard" element={<ProtectedRoute role="user"><UserDashboard /></ProtectedRoute>} />
           <Route path="/login" element={<UserLogin />} />
           <Route path="/validator" element={<ValidatorLogin />} />
-          <Route path="/validator/dashboard" element={<ValidatorDashboard />} />
+          <Route path="/validator/dashboard" element={<ProtectedRoute role="validator"><ValidatorDashboard /></ProtectedRoute>} />
 
           {/* Catch-all 404 */}
           <Route path="*" element={<NotFound />} />

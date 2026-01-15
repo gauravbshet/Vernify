@@ -95,13 +95,9 @@ export default function UserDashboard() {
   // Tries to get a Supabase access token from common localStorage locations.
   const getAuthToken = () => {
     try {
-      const raw = localStorage.getItem('supabase.auth.token') || localStorage.getItem('sb:token');
-      if (!raw) return null;
-      // token may be JSON with access_token
-      const parsed = JSON.parse(raw);
-      return parsed?.access_token || parsed?.currentSession?.access_token || null;
+      return require('../api/auth').getToken()
     } catch {
-      return null;
+      try { return localStorage.getItem('vernify_token') } catch { return null }
     }
   };
 
@@ -205,7 +201,7 @@ export default function UserDashboard() {
         </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-red-50">
+          <button onClick={async () => { const { signOut } = await import('../api/auth'); await signOut(); window.location.href = '/login' }} className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-red-50">
             <LogOut size={18} strokeWidth={2} />
             Logout
           </button>
@@ -254,7 +250,7 @@ export default function UserDashboard() {
         </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-red-50">
+          <button onClick={async () => { const { signOut } = await import('../api/auth'); await signOut(); window.location.href = '/login' }} className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-red-50">
             <LogOut size={18} strokeWidth={2} />
             Logout
           </button>
@@ -309,8 +305,8 @@ export default function UserDashboard() {
                   </div>
                   {stat.positive !== undefined && (
                     <div className={`flex items-center gap-1 ${stat.positive
-                        ? 'text-emerald-600'
-                        : 'text-amber-600'
+                      ? 'text-emerald-600'
+                      : 'text-amber-600'
                       }`}>
                       {stat.positive ? (
                         <TrendingUp size={14} strokeWidth={2.5} />
@@ -465,8 +461,8 @@ export default function UserDashboard() {
                     <div key={i} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                       <div className="flex items-start gap-3">
                         <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${activity.type === 'success' ? 'bg-emerald-500' :
-                            activity.type === 'pending' ? 'bg-amber-500' :
-                              'bg-teal-500'
+                          activity.type === 'pending' ? 'bg-amber-500' :
+                            'bg-teal-500'
                           }`}></div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-gray-900 font-medium">{activity.action}</p>
@@ -499,8 +495,8 @@ export default function UserDashboard() {
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${item.color === 'emerald' ? 'bg-emerald-500' :
-                            item.color === 'teal' ? 'bg-teal-500' :
-                              'bg-cyan-500'
+                          item.color === 'teal' ? 'bg-teal-500' :
+                            'bg-cyan-500'
                           }`}
                         style={{ width: `${item.progress}%` }}
                       ></div>

@@ -7,7 +7,6 @@ from routers.uploads_router import router as uploads_router
 from routers import blockchain_router, auth_router
 
 from services import auth as auth_service
-from models.auth import SignInRequest
 
 import os
 import httpx
@@ -72,10 +71,16 @@ async def get_profile_role(user_id: str) -> str:
     async with httpx.AsyncClient(timeout=5) as client:
         resp = await client.get(url, headers=headers, params=params)
 
-    if resp.status_code != 200 or not resp.json():
+    if resp.status_code != 200:
         raise HTTPException(status_code=404, detail="Profile not found")
 
-    return resp.json()[0]["role"]
+    try:
+        data = resp.json()
+        if not data or len(data) == 0:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        return data[0]["role"]
+    except (ValueError, KeyError, IndexError) as e:
+        raise HTTPException(status_code=404, detail=f"Profile not found: {str(e)}")
 
 
 def require_roles(*allowed_roles: str):
@@ -112,20 +117,6 @@ app.include_router(blockchain_router.router)
 @app.get("/")
 async def root():
     return {"status": "ok", "message": "Vernify backend running"}
-
-
-@app.post("/auth/signin")
-async def signin(credentials: SignInRequest):
-    auth_resp = await auth_service.sign_in_user(credentials)
-
-    if not auth_resp.success:
-        raise HTTPException(
-            status_code=401, detail="Invalid email or password")
-
-    return {
-        "success": True,
-        "data": auth_resp.data,
-    }
 
 
 # --------------------------------------------------

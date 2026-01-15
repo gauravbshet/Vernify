@@ -1,21 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom'
 
 export default function ValidatorLogin() {
   const [validatorId, setValidatorId] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate()
-
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    (async () => {
+      try {
+        const { getToken, getDashboard } = await import('../api/auth')
+        const token = getToken()
+        if (!token) return
+        try { await getDashboard('validator'); navigate('/validator/dashboard') } catch (e) { }
+      } catch (e) { }
+    })()
+  }, [])
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log({
-      validatorId,
-      password,
-    });
-    if (validatorId && password) {
+    if (!validatorId || !password) return alert('Please enter Validator ID and password')
+    try {
+      // We use validatorId as the email field for sign-in in this UI
+      const json = await import('../api/auth').then(mod => mod.signIn({ email: validatorId, password, role: 'validator' }))
+      if (!json.success) return alert(json.message || 'Sign in failed')
+      const returnedRole = json.data?.role
+      if (returnedRole && !['validator', 'admin'].includes(returnedRole)) {
+        return alert('Forbidden: validator or admin role required')
+      }
       navigate('/validator/dashboard')
-    } else {
-      alert('Please enter Validator ID and password')
+    } catch (err) {
+      console.error(err)
+      alert(err.message || 'Sign in failed')
     }
   };
 
@@ -85,6 +99,11 @@ export default function ValidatorLogin() {
         <p className="text-center text-xs text-gray-400 mt-6">
           © 2026 Validator Portal. All rights reserved.
         </p>
+
+        <div className="mt-4 text-center text-sm">
+          <button onClick={() => navigate('/admin/login')} className="text-sm text-gray-400 underline mr-4">Admin login</button>
+          <button onClick={() => navigate('/user/login')} className="text-sm text-gray-400 underline">User login</button>
+        </div>
       </div>
     </div>
   );
